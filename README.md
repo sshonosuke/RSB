@@ -6,10 +6,10 @@ Hamura, Y., Irie, K. and Sugasawa, S. (2020). Robust hierarchical modeling of co
 
 The repository includes the following 7 files.
 
-RSB-reg-function.R : Script implementing the proposed method for count regression
-RSB-TF-function.R : Script implementing the proposed method for locally adaptive smoothing (trend filtering)
-RSB-spatial-function.R : Script implementing the proposed method for spatial count regression 
-crimedata.RData: Dataset used in ``Analysis-spatial.R``
-Analysis-spatial.R : Script for analyzing the crime data via robust spatial count regression 
-Sim-reg.R: Script for simulation study with count regression 
-Sim-TF.R: Script for simulation study with trend filtering 
+- RSB-reg-function.R : Script implementing the proposed method for count regression
+- RSB-TF-function.R : Script implementing the proposed method for locally adaptive smoothing (trend filtering)
+- RSB-spatial-function.R : Script implementing the proposed method for spatial count regression 
+- crimedata.RData: Dataset used in ``Analysis-spatial.R``
+- Analysis-spatial.R : Script for analyzing the crime data via robust spatial count regression 
+- Sim-reg.R: Script for simulation study with count regression 
+- Sim-TF.R: Script for simulation study with trend filtering 
