@@ -2,7 +2,7 @@
 
 This repository provides R code implementing robust hierarchical modeling of counts using the rescaled beta distribution, as proposed by the following paper.
 
-Hamura, Y., Irie, K. and Sugasawa, S. (2020). Robust hierarchical modeling of counts under zero-inflation and outliers. [arXiv:2106.10503](https://arxiv.org/abs/2106.10503)
+Hamura, Y., Irie, K. and Sugasawa, S. (2021). Robust hierarchical modeling of counts under zero-inflation and outliers. [arXiv:2106.10503](https://arxiv.org/abs/2106.10503)
 
 The repository includes the following 7 files.
 
