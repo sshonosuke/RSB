@@ -1,7 +1,7 @@
 rm(list=ls())
 
 ## load dataset
-load("crimedata.RData")
+load("CrimeDataset.RData")
 
 
 ## load function

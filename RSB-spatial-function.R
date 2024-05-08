@@ -6,10 +6,36 @@ library(pgdraw)
 
 
 
+###-----------------------------------------------------------###
+###      Function for robust negative binomial spatial        ###  
+###             regression with RSB distribution              ### 
+###-----------------------------------------------------------###
+## INPUT 
+# Y: vector of response variable 
+# X: (n,p)-matrix of covariates (n: sample size, p: number of covariates)
+# Sp: (n,2)-matrix of location information 
+# offset: n-dimensional vector of offset term (optional)
+# robust: If "T", RSB distribution is applied (default is 'T')
+# a: 1st shape parameter of RSB distribution (default is 0.5) 
+# b: 2nd shape parameter of RSB distribution (default is 0.5)
+# band: bandwidth in Random-walk MH update for spatial range parameter (default is 0.1)
+# M: number of knots of Gaussian predictive process 
+# mc: length of Markov Chain Monte Carlo (default is 3000)
+# burn: length of burn-in period (default is 1000)
+# delta: tuning constant for approximating likelihood (default is 1000)
 
-###   Robust spatial poisson regression     ###
-# band: bandwidth in RW-MH for spatial range parameter 
-RSB.sp <- function(Y, X, Sp, offset=NULL, robust=T, a=0.5, gam=0.5, band=0.1, M=100, mc=3000, burn=1000, delta=1000){
+## OUTPUT
+## Posterior samples of the following parameter and latent variables 
+# Beta: regression coefficients 
+# Eta: error components for outliers
+# Xi: spatial effects
+# h: bandwidth parameter of Gaussian predictive process
+# Tau: scale parameter of Gaussian predictive process
+# Z: indicator of using RSB distributions 
+# S: mixing proportion
+
+RSB.sp <- function(Y, X, Sp, offset=NULL, robust=T, a=0.5, b=0.5, band=0.1, 
+                   M=100, mc=3000, burn=1000, delta=1000){
   # settings
   XX <- cbind(1, X)
   n <- dim(XX)[[1]]
@@ -56,7 +82,7 @@ RSB.sp <- function(Y, X, Sp, offset=NULL, robust=T, a=0.5, gam=0.5, band=0.1, M=
     if(robust){
       # Eta2 (outlier)  
       V <- rgamma(n, 1-a, log(1+Eta2))
-      W <- rgamma(n, a+gam, 1+log(1+Eta2))
+      W <- rgamma(n, a+b, 1+log(1+Eta2))
       U <- rgamma(n, V+W+1, 1+Eta2)
       p.Eta2 <- rgamma(n, 1, U)
       p.Eta2[p.Eta2 > upper] <- upper
@@ -93,10 +119,10 @@ RSB.sp <- function(Y, X, Sp, offset=NULL, robust=T, a=0.5, gam=0.5, band=0.1, M=
     reg <- as.vector(XX%*%Beta)
     
     # Xi (predictive process)
-    H <- exp(-kDD/(2*h^2) )
+    H <- exp(-kDD/h^2) 
     dec <- eigen(H)
     IH <- (dec$vectors)%*%diag(1/dec$values)%*%t(dec$vectors)
-    P <- exp(-P.mat/(2*h^2))
+    P <- exp(-P.mat/h^2)
     D <- P%*%IH
     mat <- t(D*Om)%*%D
     A <- solve( mat + Tau*IH )
@@ -113,18 +139,23 @@ RSB.sp <- function(Y, X, Sp, offset=NULL, robust=T, a=0.5, gam=0.5, band=0.1, M=
     bb <- -sum(log(eigen(H)$values[eigen(H)$values>0]))
     new.h <- h + band*rnorm(1)
     new.h[new.h <- 10^(-8)] <- 10^(-8)
-    new.H <- exp(-kDD/(2*new.h^2))
+    new.H <- exp(-kDD/new.h^2)
     dec <- eigen(new.H)
     new.IH <- (dec$vectors)%*%diag(1/dec$values)%*%t(dec$vectors)
     new.bb <- -sum(log(eigen(new.H)$values[eigen(new.H)$values>0]))
-    val1 <- 0.5*bb - 0.5*t(Ep.Xi)%*%IH%*%Ep.Xi/Tau^2
-    val2 <- 0.5*new.bb - 0.5*t(Ep.Xi)%*%new.IH%*%Ep.Xi/Tau^2
+    new.P <- exp(-P.mat/new.h^2)
+    new.D <- new.P%*%new.IH
+    new.Xi <- as.vector( new.D%*%Ep.Xi )  
+    Psi <- reg + offset + Xi + log(Eta) 
+    new.Psi <- reg + offset + new.Xi + log(Eta) 
+    val1 <- 0.5*bb - 0.5*Tau*t(Ep.Xi)%*%IH%*%Ep.Xi + sum(dpois(Y, exp(Psi), log=T))
+    val2 <- 0.5*new.bb - 0.5*Tau*t(Ep.Xi)%*%new.IH%*%Ep.Xi + sum(dpois(Y, exp(new.Psi), log=T))
     prob <- min(1, exp(val2-val1))
     ch <- rbinom(1, 1, prob)
     h <- h + ch*(new.h-h)
     h.pos[k] <- h
-    
-    if(round(k/500)==(k/500)){ print(k); plot(h.pos)}
+
+    if(round(k/500)==(k/500)){ print(k) }
   }
   
   # Summary 
@@ -136,6 +167,6 @@ RSB.sp <- function(Y, X, Sp, offset=NULL, robust=T, a=0.5, gam=0.5, band=0.1, M=
   h.pos <- h.pos[-om]
   S.pos <- S.pos[-om]
   Tau.pos <- Tau.pos[-om]
-  Res <- list(Beta=Beta.pos, Eta=Eta.pos, Xi=Xi.pos, Z=Z.pos, h=h.pos, Tau=Tau.pos, Z=Z.pos, S=S.pos)
+  Res <- list(Beta=Beta.pos, Eta=Eta.pos, Xi=Xi.pos, h=h.pos, Tau=Tau.pos, Z=Z.pos, S=S.pos)
   return(Res)
 }
